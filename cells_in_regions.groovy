@@ -1,3 +1,5 @@
+clearAllObjects();
+
 // create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
 
 import qupath.lib.objects.PathObjects
@@ -7,7 +9,7 @@ import qupath.lib.regions.ImagePlane
 int z = 0
 int t = 0
 def plane = ImagePlane.getPlane(z, t)
-def roi = ROIs.createRectangleROI(7000, 8000, 3000, 3000, plane)
+def roi = ROIs.createRectangleROI(7000, 8000, 100, 100, plane)
 def annotation = PathObjects.createAnnotationObject(roi)
 addObject(annotation)
 
@@ -42,5 +44,7 @@ runPlugin('qupath.imagej.detect.cells.SubcellularDetection', '{"detection[Channe
 // save annotations
 File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export'));
 directory.mkdirs();
-saveAnnotationMeasurements(buildFilePath(directory.toString(),'annotations.tsv'));
-saveDetectionMeasurements(buildFilePath(directory.toString(),'detections.tsv'));
+imageName = ServerTools.getDisplayableImageName(imageData.getServer())
+saveAnnotationMeasurements(buildFilePath(directory.toString(),imageName+'__annotations.tsv'));
+saveDetectionMeasurements(buildFilePath(directory.toString(),imageName+'__detections.tsv'));
+
