@@ -1,11 +1,12 @@
-clearAllObjects();
-
-// create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
-
 import qupath.lib.objects.PathObjects
 import qupath.lib.roi.ROIs
 import qupath.lib.regions.ImagePlane
+import qupath.lib.objects.PathCellObject
+import static ch.epfl.biop.qupath.atlas.allen.api.AtlasTools.*
 
+clearAllObjects();
+
+// create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
 int z = 0
 int t = 0
 def plane = ImagePlane.getPlane(z, t)
@@ -25,8 +26,6 @@ selectAnnotations();
 clearSelectedObjects();
 
 // load warped Allen regions
-import static ch.epfl.biop.qupath.atlas.allen.api.AtlasTools.*
-
 def imageData = getCurrentImageData();
 def splitLeftRight = true;
 loadWarpedAtlasAnnotations(imageData, splitLeftRight);
@@ -40,6 +39,21 @@ insertObjects(selectedObjects);
 
 // run Subcellular Spot Detection
 runPlugin('qupath.imagej.detect.cells.SubcellularDetection', '{"detection[Channel 1]": -1.0,  "detection[Channel 2]": 0.4,  "detection[Channel 3]": 0.3,  "detection[Channel 4]": 0.15,  "detection[Channel 5]": 0.2,  "detection[Channel 6]": -1.0,  "detection[Channel 7]": -1.0,  "doSmoothing": false,  "splitByIntensity": true,  "splitByShape": true,  "spotSizeMicrons": 0.5,  "minSpotSizeMicrons": 0.2,  "maxSpotSizeMicrons": 7.0,  "includeClusters": false}');
+
+// change cell name to replace name with unique ID number
+counter = 1
+
+selectDetections()
+detections = getSelectedObjects()
+
+for (detection in detections) {
+    if (detection.class.equals(PathCellObject.class)) {
+        detection.setName(counter.toString());
+        ++counter
+    } else {
+        detection.setName('');
+    }
+}
 
 // save annotations
 File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export'));
