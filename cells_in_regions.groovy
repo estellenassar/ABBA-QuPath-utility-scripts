@@ -4,18 +4,22 @@ import qupath.lib.regions.ImagePlane
 import qupath.lib.objects.PathCellObject
 import static ch.epfl.biop.qupath.atlas.allen.api.AtlasTools.*
 
+useSmallArea = false;
 clearAllObjects();
 
 // create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
-int z = 0
-int t = 0
-def plane = ImagePlane.getPlane(z, t)
-def roi = ROIs.createRectangleROI(7000, 8000, 100, 100, plane)
-def annotation = PathObjects.createAnnotationObject(roi)
-addObject(annotation)
 
+if (useSmallArea) {
+    int z = 0
+    int t = 0
+    def plane = ImagePlane.getPlane(z, t)
+    def roi = ROIs.createRectangleROI(7000, 8000, 100, 100, plane)
+    def annotation = PathObjects.createAnnotationObject(roi)
+    addObject(annotation)
+} else {
+    runPlugin('qupath.imagej.detect.tissue.SimpleTissueDetection2', '{"threshold": 1,  "requestedPixelSizeMicrons": 20.0,  "minAreaMicrons": 10000.0,  "maxHoleAreaMicrons": 1000000.0,  "darkBackground": true,  "smoothImage": false,  "medianCleanup": false,  "dilateBoundaries": false,  "smoothCoordinates": true,  "excludeOnBoundary": false,  "singleAnnotation": true}');
+}
 
-//runPlugin('qupath.imagej.detect.tissue.SimpleTissueDetection2', '{"threshold": 1,  "requestedPixelSizeMicrons": 20.0,  "minAreaMicrons": 10000.0,  "maxHoleAreaMicrons": 1000000.0,  "darkBackground": true,  "smoothImage": false,  "medianCleanup": false,  "dilateBoundaries": false,  "smoothCoordinates": true,  "excludeOnBoundary": false,  "singleAnnotation": true}');
 selectAnnotations();
 
 // run Positive Cell Detection
@@ -56,7 +60,7 @@ for (detection in detections) {
 }
 
 // save annotations
-File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export'));
+File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export2'));
 directory.mkdirs();
 imageName = ServerTools.getDisplayableImageName(imageData.getServer())
 saveAnnotationMeasurements(buildFilePath(directory.toString(),imageName+'__annotations.tsv'));
