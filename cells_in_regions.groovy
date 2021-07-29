@@ -1,8 +1,14 @@
 // create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
 
+import static qupath.lib.gui.scripting.QPEx.* // For intellij editor autocompletion
+
 import qupath.lib.objects.PathObjects
 import qupath.lib.roi.ROIs
 import qupath.lib.regions.ImagePlane
+import qupath.lib.measurements.MeasurementList
+
+import ch.epfl.biop.qupath.transform.*
+import net.imglib2.RealPoint
 
 int z = 0
 int t = 0
@@ -38,6 +44,31 @@ insertObjects(selectedObjects);
 
 // run Subcellular Spot Detection
 runPlugin('qupath.imagej.detect.cells.SubcellularDetection', '{"detection[Channel 1]": -1.0,  "detection[Channel 2]": 0.4,  "detection[Channel 3]": 0.3,  "detection[Channel 4]": 0.15,  "detection[Channel 5]": 0.2,  "detection[Channel 6]": -1.0,  "detection[Channel 7]": -1.0,  "doSmoothing": false,  "splitByIntensity": true,  "splitByShape": true,  "spotSizeMicrons": 0.5,  "minSpotSizeMicrons": 0.2,  "maxSpotSizeMicrons": 7.0,  "includeClusters": false}');
+
+
+// https://github.com/BIOP/qupath-biop-extensions/blob/master/src/test/resources/abba_scripts/importABBAResults.groovy
+// Get ABBA transform file located in entry path +
+def targetEntry = getProjectEntry()
+def targetEntryPath = targetEntry.getEntryPath();
+
+def fTransform = new File (targetEntryPath.toString(),"ABBA-Transform.json")
+
+if (!fTransform.exists()) {
+    System.err.println("ABBA transformation file not found for entry "+targetEntry);
+    return ;
+}
+
+def pixelToCCFTransform = Warpy.getRealTransform(fTransform).inverse(); // Needs the inverse transform
+
+getDetectionObjects().forEach(detection -> {
+    RealPoint ccfCoordinates = new RealPoint(3);
+    MeasurementList ml = detection.getMeasurementList();
+    ccfCoordinates.setPosition([detection.getROI().getCentroidX(),detection.getROI().getCentroidY(),0] as double[]);
+    pixelToCCFTransform.apply(ccfCoordinates, ccfCoordinates);
+    ml.addMeasurement("Allen CCFv3 X mm", ccfCoordinates.getDoublePosition(0) )
+    ml.addMeasurement("Allen CCFv3 Y mm", ccfCoordinates.getDoublePosition(1) )
+    ml.addMeasurement("Allen CCFv3 Z mm", ccfCoordinates.getDoublePosition(2) )
+})
 
 // save annotations
 File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export'));
