@@ -1,9 +1,11 @@
 import static qupath.lib.gui.scripting.QPEx.* // For intellij editor autocompletion
+import static ch.epfl.biop.qupath.atlas.allen.api.AtlasTools.*
 
 import qupath.lib.objects.PathObjects
 import qupath.lib.roi.ROIs
 import qupath.lib.regions.ImagePlane
 import qupath.lib.measurements.MeasurementList
+import qupath.lib.objects.PathCellObject
 
 import ch.epfl.biop.qupath.transform.*
 import net.imglib2.RealPoint
