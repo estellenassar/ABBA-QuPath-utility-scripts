@@ -1,5 +1,3 @@
-// create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
-
 import static qupath.lib.gui.scripting.QPEx.* // For intellij editor autocompletion
 
 import qupath.lib.objects.PathObjects
@@ -10,15 +8,22 @@ import qupath.lib.measurements.MeasurementList
 import ch.epfl.biop.qupath.transform.*
 import net.imglib2.RealPoint
 
-int z = 0
-int t = 0
-def plane = ImagePlane.getPlane(z, t)
-def roi = ROIs.createRectangleROI(7000, 8000, 3000, 3000, plane)
-def annotation = PathObjects.createAnnotationObject(roi)
-addObject(annotation)
+useSmallArea = false;
+clearAllObjects();
 
+// create and select rectangle (code from https://qupath.readthedocs.io/en/stable/docs/scripting/overview.html#creating-rois)
 
-//runPlugin('qupath.imagej.detect.tissue.SimpleTissueDetection2', '{"threshold": 1,  "requestedPixelSizeMicrons": 20.0,  "minAreaMicrons": 10000.0,  "maxHoleAreaMicrons": 1000000.0,  "darkBackground": true,  "smoothImage": false,  "medianCleanup": false,  "dilateBoundaries": false,  "smoothCoordinates": true,  "excludeOnBoundary": false,  "singleAnnotation": true}');
+if (useSmallArea) {
+    int z = 0
+    int t = 0
+    def plane = ImagePlane.getPlane(z, t)
+    def roi = ROIs.createRectangleROI(7000, 8000, 100, 100, plane)
+    def annotation = PathObjects.createAnnotationObject(roi)
+    addObject(annotation)
+} else {
+    runPlugin('qupath.imagej.detect.tissue.SimpleTissueDetection2', '{"threshold": 1,  "requestedPixelSizeMicrons": 20.0,  "minAreaMicrons": 10000.0,  "maxHoleAreaMicrons": 1000000.0,  "darkBackground": true,  "smoothImage": false,  "medianCleanup": false,  "dilateBoundaries": false,  "smoothCoordinates": true,  "excludeOnBoundary": false,  "singleAnnotation": true}');
+}
+
 selectAnnotations();
 
 // run Positive Cell Detection
@@ -29,8 +34,6 @@ selectAnnotations();
 clearSelectedObjects();
 
 // load warped Allen regions
-import static ch.epfl.biop.qupath.atlas.allen.api.AtlasTools.*
-
 def imageData = getCurrentImageData();
 def splitLeftRight = true;
 loadWarpedAtlasAnnotations(imageData, splitLeftRight);
@@ -44,7 +47,6 @@ insertObjects(selectedObjects);
 
 // run Subcellular Spot Detection
 runPlugin('qupath.imagej.detect.cells.SubcellularDetection', '{"detection[Channel 1]": -1.0,  "detection[Channel 2]": 0.4,  "detection[Channel 3]": 0.3,  "detection[Channel 4]": 0.15,  "detection[Channel 5]": 0.2,  "detection[Channel 6]": -1.0,  "detection[Channel 7]": -1.0,  "doSmoothing": false,  "splitByIntensity": true,  "splitByShape": true,  "spotSizeMicrons": 0.5,  "minSpotSizeMicrons": 0.2,  "maxSpotSizeMicrons": 7.0,  "includeClusters": false}');
-
 
 // https://github.com/BIOP/qupath-biop-extensions/blob/master/src/test/resources/abba_scripts/importABBAResults.groovy
 // Get ABBA transform file located in entry path +
@@ -70,8 +72,25 @@ getDetectionObjects().forEach(detection -> {
     ml.addMeasurement("Allen CCFv3 Z mm", ccfCoordinates.getDoublePosition(2) )
 })
 
+// change cell name to replace name with unique ID number
+counter = 1
+
+selectDetections()
+detections = getSelectedObjects()
+
+for (detection in detections) {
+    if (detection.class.equals(PathCellObject.class)) {
+        detection.setName(counter.toString());
+        ++counter
+    } else {
+        detection.setName('');
+    }
+}
+
+
 // save annotations
-File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export'));
+File directory = new File(buildFilePath(PROJECT_BASE_DIR,'export2'));
 directory.mkdirs();
-saveAnnotationMeasurements(buildFilePath(directory.toString(),'annotations.tsv'));
-saveDetectionMeasurements(buildFilePath(directory.toString(),'detections.tsv'));
+imageName = ServerTools.getDisplayableImageName(imageData.getServer())
+saveAnnotationMeasurements(buildFilePath(directory.toString(),imageName+'__annotations.tsv'));
+saveDetectionMeasurements(buildFilePath(directory.toString(),imageName+'__detections.tsv'));
